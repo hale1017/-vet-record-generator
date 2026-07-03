@@ -32,13 +32,13 @@ window.AI = (function () {
   function models(p) { return MODELS[p === 'gemini' ? 'gemini' : 'openai']; }
 
   /* ---- 共用：組 OCR prompt + 欄位鍵 ---- */
+  function isSigKey(key) { return key === 'intern' || key === 'resident' || key.indexOf('sig_') === 0; }
   function ocrKeys(profile) {
-    return window.profileKeys(profile)
-      .filter((k) => !['intern', 'resident', 'sig'].includes(k.key)).map((k) => k.key);
+    return window.profileKeys(profile).filter((k) => !isSigKey(k.key)).map((k) => k.key);
   }
   function ocrPrompt(profile) {
     const spec = window.profileKeys(profile)
-      .filter((k) => !['intern', 'resident', 'sig'].includes(k.key))
+      .filter((k) => !isSigKey(k.key))
       .map((k) => `- "${k.key}": ${k.label}`).join('\n');
     return '你是獸醫病歷謄寫助理。附圖是一張或多張「已去識別化」的手寫獸醫病歷（可能是同一份病歷的多頁），內容中英夾雜、含臨床縮寫。\n' +
       '請綜合所有圖片，擷取可辨識的資訊，填入下列 JSON 欄位。規則：\n' +

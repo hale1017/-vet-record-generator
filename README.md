@@ -7,7 +7,7 @@
 - **隱私**：去識別化在使用者電腦端做完再送雲端（真實病歷屬敏感資料）。
 - **產出**：瀏覽器端 `docx.js` 產 `.docx`。
 
-完整規格見 [SPEC.md](SPEC.md)。
+完整規格見 [SPEC.md](SPEC.md)。給同學的操作說明見 [使用手冊.md](使用手冊.md)；發佈方式見 [部署指南.md](部署指南.md)。
 
 > 臨床格式（Profile A/B、縮寫表、去識別化清單）的權威來源在 VetVault：
 > `D:\obsidian\VetVault\20_VetSchool\clinical\workflows\WF-0002_medical-record-generator.md`

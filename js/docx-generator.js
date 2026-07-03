@@ -160,7 +160,21 @@ window.DocxGen = (function () {
     section('Assessment/plan (A/P)', ap, c, true);
 
     section('Prescriptions (drug name, dose, frequency, form, duration)', g(v, 'rx'), c, true);
-    c.push(para('Sig. ' + g(v, 'intern'), { after: 0 }));
+    // Sig. + 5 欄簽名表（Student/Intern/Post Grad/Resident/Consultant，可見黑框，與正式範本一致）
+    c.push(para('Sig.', { bold: true, after: 20 }));
+    c.push(new (D().Table)({
+      width: { size: 100, type: D().WidthType.PERCENTAGE }, borders: BORDER(),
+      rows: [
+        new (D().TableRow)({ children: [
+          tcell('Student', true, 20), tcell('Intern', true, 20), tcell('Post Grad', true, 20),
+          tcell('Resident', true, 20), tcell('Consultant', true, 20),
+        ]}),
+        new (D().TableRow)({ children: [
+          tcell(g(v, 'sig_student'), false, 20), tcell(g(v, 'sig_intern'), false, 20), tcell(g(v, 'sig_postgrad'), false, 20),
+          tcell(g(v, 'sig_resident'), false, 20), tcell(g(v, 'sig_consultant'), false, 20),
+        ]}),
+      ],
+    }));
 
     const docChildren = [
       para('國立臺灣大學生物資源暨農學院附設動物醫院', { after: 40 }),

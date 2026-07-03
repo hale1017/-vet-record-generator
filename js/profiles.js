@@ -106,8 +106,12 @@ window.PROFILES = {
       { type: 'section', key: 'ddx', label: 'DDx' },
       { type: 'section', key: 'ap', label: 'Assessment/plan (A/P)', required: true, rows: 4 },
       { type: 'section', key: 'rx', label: 'Prescriptions (drug name, dose, frequency, form, duration)' },
-      { type: 'signature', title: '簽名', fields: [
-        { key: 'intern', label: 'Sig.（實習醫師）' },
+      { type: 'signature', title: 'Sig.（簽名，可只填自己那格）', fields: [
+        { key: 'sig_student', label: 'Student' },
+        { key: 'sig_intern', label: 'Intern' },
+        { key: 'sig_postgrad', label: 'Post Grad' },
+        { key: 'sig_resident', label: 'Resident' },
+        { key: 'sig_consultant', label: 'Consultant' },
       ]},
     ],
   },
