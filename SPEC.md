@@ -69,4 +69,8 @@
 ## 目前狀態
 - ✅ 方向定案（2026-07-03）。
 - ✅ 臨床格式已逆向（Profile A/B），權威來源在 VetVault WF-0002。
-- ⏳ **下一步：搭 MVP 第一版**（選格式 → 上傳 → 去識別化 → 產 .docx 骨架，先不接 AI）。
+- ✅ **MVP 第一版完成（2026-07-03，先不接 AI）**：4 步精靈（選格式 → 上傳照片+client 端去識別化 → 填欄位 → 確認匯出）；Profile A/B 皆可產出 `.docx`（瀏覽器測試通過，兩範本各約 8KB）。
+  - 檔案：`index.html`、`styles.css`、`js/{profiles,redaction,docx-generator,app}.js`。
+  - docx.js CDN：`https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js`（**必須是 `index.umd.js`** 才會掛上全域 `docx`；`build/index.js` 不行）。
+  - 本機預覽：`python -m http.server 8000` 後開 `http://localhost:8000`。
+- ⏳ **下一步**：① 接 vision AI（redacted 影像 → OCR＋欄位對應＋中英翻譯，預填步驟 3）；② 接語音轉錄；③ BYO key 設定介面；④ 推 GitHub + 靜態託管上線。

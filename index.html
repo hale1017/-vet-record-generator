@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>病歷自動生成器</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="top">
+    <h1>病歷自動生成器 <span class="mvp">MVP</span></h1>
+    <p class="sub">選格式 → 上傳照片去識別化 → 填欄位 → 匯出 Word（.docx）。本版尚未接 AI，欄位手動填。</p>
+  </header>
+
+  <nav class="stepper">
+    <span id="dot1" class="dot">1 選格式</span>
+    <span id="dot2" class="dot">2 去識別化</span>
+    <span id="dot3" class="dot">3 填欄位</span>
+    <span id="dot4" class="dot">4 確認匯出</span>
+  </nav>
+
+  <main>
+    <div id="cdnWarn" class="banner err" style="display:none">
+      ⚠️ docx 函式庫未載入（需要網路）。UI 可操作，但「匯出 .docx」需連上網路後重新整理。
+    </div>
+
+    <!-- Step 1 -->
+    <section id="step1" class="step">
+      <h2>1 · 選擇病歷格式</h2>
+      <p class="muted">不同科別 / 老師格式不同，先選對應的 profile。</p>
+      <div id="profileCards" class="cards"></div>
+      <div class="actions"><button id="toStep2" class="primary" disabled>下一步：上傳照片</button></div>
+    </section>
+
+    <!-- Step 2 -->
+    <section id="step2" class="step">
+      <h2>2 · 上傳手寫病歷並去識別化</h2>
+      <p class="muted">真實病歷屬敏感資料。<b>在你的電腦上先蓋掉敏感欄位</b>，之後才會送雲端 AI（本版尚未接 AI）。此步驟可略過。</p>
+      <div class="redact">
+        <input type="file" id="photoInput" accept="image/*" />
+        <div class="canvas-wrap"><canvas id="redactCanvas"></canvas></div>
+        <p id="redactHint" class="muted">選一張照片後，在圖上按住拖曳畫黑框。</p>
+        <div class="redact-tools">
+          <button id="undoBox" disabled>復原一格</button>
+          <button id="clearBox" disabled>清除全部</button>
+          <button id="dlRedacted" disabled>下載去識別化影像</button>
+          <span id="boxCount" class="muted"></span>
+        </div>
+      </div>
+      <div class="actions">
+        <button id="back1" class="ghost">上一步</button>
+        <button id="skipPhoto" class="ghost">略過（暫無照片）</button>
+        <button id="toStep3" class="primary">下一步：填欄位</button>
+      </div>
+    </section>
+
+    <!-- Step 3 -->
+    <section id="step3" class="step">
+      <h2>3 · 填寫欄位</h2>
+      <p id="formTitle" class="muted"></p>
+      <div id="formFields"></div>
+      <div class="actions">
+        <button id="back2" class="ghost">上一步</button>
+        <button id="toStep4" class="primary">下一步：確認</button>
+      </div>
+    </section>
+
+    <!-- Step 4 -->
+    <section id="step4" class="step">
+      <h2>4 · 確認並匯出</h2>
+      <div id="reviewWarn" class="banner warn" style="display:none"></div>
+      <p class="muted">確認內容無誤後匯出 .docx；有問題請回上一步修改。</p>
+      <div id="reviewBody" class="review"></div>
+      <div class="actions">
+        <button id="back3" class="ghost">上一步</button>
+        <button id="exportBtn" class="primary">匯出 .docx</button>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    臨床格式權威來源：VetVault WF-0002 · 產出僅供輔助，最終內容由醫師本人確認負責。
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js"></script>
+  <script src="js/profiles.js"></script>
+  <script src="js/redaction.js"></script>
+  <script src="js/docx-generator.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
