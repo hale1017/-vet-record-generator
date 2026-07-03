@@ -10,10 +10,14 @@ window.AI = (function () {
     openaiKey: 'vetrec_openai_key', geminiKey: 'vetrec_gemini_key',
     openaiModel: 'vetrec_openai_model', geminiModel: 'vetrec_gemini_model',
   };
-  const DEF = { provider: 'openai', openaiModel: 'gpt-4o', geminiModel: 'gemini-2.0-flash' };
+  const DEF = { provider: 'openai', openaiModel: 'gpt-4o', geminiModel: 'gemini-2.5-flash' };
   const MODELS = {
     openai: [{ v: 'gpt-4o', t: 'gpt-4o（較準）' }, { v: 'gpt-4o-mini', t: 'gpt-4o-mini（較便宜）' }],
-    gemini: [{ v: 'gemini-2.0-flash', t: 'gemini-2.0-flash（免費額度）' }, { v: 'gemini-1.5-flash', t: 'gemini-1.5-flash（免費額度）' }],
+    gemini: [
+      { v: 'gemini-2.5-flash', t: 'gemini-2.5-flash' },
+      { v: 'gemini-2.0-flash', t: 'gemini-2.0-flash' },
+      { v: 'gemini-2.0-flash-lite', t: 'gemini-2.0-flash-lite（最省）' },
+    ],
   };
 
   function getProvider() { return localStorage.getItem(LS.provider) || DEF.provider; }
