@@ -19,12 +19,21 @@ window.DocxGen = (function () {
   function para(text, opts) {
     opts = opts || {};
     const lines = String(text == null ? '' : text).split('\n');
-    const runs = lines.map((ln, i) => new (D().TextRun)({ text: ln, bold: !!opts.bold, break: i > 0 ? 1 : 0 }));
+    const runs = lines.map((ln, i) => {
+      const o = { text: ln };
+      if (opts.bold) o.bold = true;   // 非粗體就完全不帶 w:b（與正式範本一致）
+      if (i > 0) o.break = 1;
+      return new (D().TextRun)(o);
+    });
     return new (D().Paragraph)({
       children: runs,
       alignment: opts.center ? D().AlignmentType.CENTER : undefined,
       spacing: { after: opts.after == null ? 60 : opts.after },
     });
+  }
+  // 表格儲存格（含寬度%）
+  function tcell(text, bold, w) {
+    return new (D().TableCell)({ children: [para(text, { bold: bold, after: 0 })], width: { size: w, type: D().WidthType.PERCENTAGE } });
   }
   // 標題(粗體) + 內容；always=true 即使空也保留標題
   function section(label, value, out, always) {
@@ -95,10 +104,21 @@ window.DocxGen = (function () {
     const sg = [g(v, 'age'), g(v, 'sex'), g(v, 'species'), g(v, 'breed')].filter(Boolean).join(', ');
     c.push(para('Signalment: ' + sg, { after: 20 }));
     c.push(para('Temperament: ' + g(v, 'temperament'), { after: 20 }));
-    // Vitals 列（BW/BCS/BT/HR/BP/RR）
-    c.push(para('BW: ' + valUnit(g(v, 'bw'), 'kg') + '    BCS: ' + valUnit(g(v, 'bcs'), '/9') +
-      '    BT: ' + valUnit(g(v, 'bt'), '°C') + '    HR: ' + valUnit(g(v, 'hr'), 'bpm') +
-      '    BP: ' + valUnit(g(v, 'bp'), 'mmHg') + '    RR: ' + valUnit(g(v, 'rr'), 'bpm'), { after: 120 }));
+    // Vitals 表（6 欄：標題列 + 數值列，白色框線，與正式範本一致）
+    c.push(new (D().Table)({
+      width: { size: 100, type: D().WidthType.PERCENTAGE }, borders: BORDER_WHITE(),
+      rows: [
+        new (D().TableRow)({ children: [
+          tcell('BW (kg)', true, 16), tcell('BCS (/9)', true, 16), tcell('BT (°C)', true, 17),
+          tcell('HR (bpm)', true, 17), tcell('BP (mmHg)', true, 17), tcell('RR (bpm)', true, 17),
+        ]}),
+        new (D().TableRow)({ children: [
+          tcell(g(v, 'bw'), false, 16), tcell(g(v, 'bcs'), false, 16), tcell(g(v, 'bt'), false, 17),
+          tcell(g(v, 'hr'), false, 17), tcell(g(v, 'bp'), false, 17), tcell(g(v, 'rr'), false, 17),
+        ]}),
+      ],
+    }));
+    c.push(para('', { after: 80 }));
 
     section('Chief complaint (CC)', g(v, 'cc'), c, true);
 
@@ -147,7 +167,7 @@ window.DocxGen = (function () {
       para('病　歷　表', { bold: true, center: true, after: 120 }),
       new (D().Table)({
         width: { size: 100, type: D().WidthType.PERCENTAGE },
-        borders: BORDER(),
+        borders: BORDER_WHITE(),
         rows: [ new (D().TableRow)({ children: [cell(c, 100)] }) ],
       }),
     ];
