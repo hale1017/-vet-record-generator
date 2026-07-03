@@ -11,6 +11,10 @@ window.DocxGen = (function () {
     const s = { style: D().BorderStyle.SINGLE, size: 4, color: '000000' };
     return { top: s, bottom: s, left: s, right: s, insideHorizontal: s, insideVertical: s };
   };
+  const BORDER_WHITE = () => {
+    const s = { style: D().BorderStyle.SINGLE, size: 4, color: 'FFFFFF' };
+    return { top: s, bottom: s, left: s, right: s, insideHorizontal: s, insideVertical: s };
+  };
 
   function para(text, opts) {
     opts = opts || {};
@@ -33,18 +37,37 @@ window.DocxGen = (function () {
     return new (D().TableCell)({ children, width: widthPct ? { size: widthPct, type: D().WidthType.PERCENTAGE } : undefined });
   }
 
-  /* ---------------- Profile A（無表格） ---------------- */
+  /* ---------------- Profile A（表格＋白色框線） ---------------- */
   function buildA(v) {
     const c = [];
-    c.push(para('Date: ' + g(v, 'date') + '    Case No: ' + g(v, 'caseNo') + '    Name: ' + g(v, 'name'), { after: 20 }));
+    // Header 表：Date | Case No | Name（白線）
+    c.push(new (D().Table)({
+      width: { size: 100, type: D().WidthType.PERCENTAGE }, borders: BORDER_WHITE(),
+      rows: [ new (D().TableRow)({ children: [
+        cell([para('Date: ' + g(v, 'date'))], 34),
+        cell([para('Case No: ' + g(v, 'caseNo'))], 33),
+        cell([para('Name: ' + g(v, 'name'))], 33),
+      ]})],
+    }));
     const sig = [g(v, 'age'), g(v, 'sex'), g(v, 'species'), g(v, 'breed')].filter(Boolean).join(', ');
     c.push(para('Signalments: ' + sig, { after: 20 }));
     c.push(para('Temperament: ' + g(v, 'temperament'), { after: 20 }));
-    // Vitals（純文字，無表格）
-    const vit = 'BW: ' + valUnit(g(v, 'bw'), 'kg') + '    BT: ' + (g(v, 'bt') || '') +
-      '    HR: ' + valUnit(g(v, 'hr'), 'bpm') + '    RR: ' + valUnit(g(v, 'rr'), '/min');
-    c.push(para(vit, { after: g(v, 'bp') ? 20 : 100 }));
-    if (g(v, 'bp')) c.push(para('BP: ' + g(v, 'bp'), { after: 100 }));
+    // Vitals 表（白線）：BW|BT|HR|RR，BP 獨立一列跨欄
+    c.push(new (D().Table)({
+      width: { size: 100, type: D().WidthType.PERCENTAGE }, borders: BORDER_WHITE(),
+      rows: [
+        new (D().TableRow)({ children: [
+          cell([para('BW: ' + valUnit(g(v, 'bw'), 'kg'))], 25),
+          cell([para('BT: ' + (g(v, 'bt') || ''))], 25),
+          cell([para('HR: ' + valUnit(g(v, 'hr'), 'bpm'))], 25),
+          cell([para('RR: ' + valUnit(g(v, 'rr'), '/min'))], 25),
+        ]}),
+        new (D().TableRow)({ children: [
+          new (D().TableCell)({ children: [para('BP: ' + g(v, 'bp'))], columnSpan: 4 }),
+        ]}),
+      ],
+    }));
+    c.push(para('', { after: 60 }));
 
     section('Chief complaint (CC)', g(v, 'cc'), c, true);
     section('History of present illness (HP)', g(v, 'hp'), c, true);
