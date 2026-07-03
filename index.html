@@ -38,13 +38,12 @@
       <h2>2 · 上傳手寫病歷並去識別化</h2>
       <p class="muted">真實病歷屬敏感資料。<b>在你的電腦上先蓋掉敏感欄位</b>，之後才會送雲端 AI（本版尚未接 AI）。此步驟可略過。</p>
       <div class="redact">
-        <input type="file" id="photoInput" accept="image/*" />
-        <div class="canvas-wrap"><canvas id="redactCanvas"></canvas></div>
-        <p id="redactHint" class="muted">選一張照片後，在圖上按住拖曳畫黑框。</p>
+        <input type="file" id="photoInput" accept="image/*" multiple />
+        <p class="muted">可一次或分次選多張（一份病歷有兩張時）。選好後在每張圖上按住拖曳蓋掉飼主姓名/電話/病歷號/晶片號。</p>
+        <div id="redactPages" class="redact-pages"></div>
         <div class="redact-tools">
-          <button id="undoBox" disabled>復原一格</button>
-          <button id="clearBox" disabled>清除全部</button>
-          <button id="dlRedacted" disabled>下載去識別化影像</button>
+          <button id="undoBox" disabled>復原上一格</button>
+          <button id="clearBox" disabled>清除全部黑框</button>
           <span id="boxCount" class="muted"></span>
         </div>
         <div class="ai-row">

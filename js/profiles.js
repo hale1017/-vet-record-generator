@@ -1,65 +1,60 @@
 /*
  * Profile 定義 — 資料驅動表單。
- * 臨床格式權威來源：VetVault  20_VetSchool/clinical/workflows/WF-0002_medical-record-generator.md
- * 新增科別（如未來內科 Profile C）：在此加一組設定，並在 docx-generator.js 加對應 buildC()。
- *
- * block 型別：
- *   fields    → 一排小輸入（header / signalment / vitals / signature）
- *   section   → 單一大 textarea
- *   group     → 一組子欄位（PE 結構化子欄位、HP 的 S/A/U/D）
- *   signature → 簽名列
+ * 臨床格式權威來源：使用者真實範本（PaPa=A 預設外科、Didi=B 劉乃潔老師）+ VetVault WF-0002。
+ * block 型別：fields（一排小輸入）/ section（大 textarea）/ group（子欄位）/ signature。
  */
 window.PROFILES = {
   A: {
     id: 'A',
-    label: 'Profile A — 預設外科格式',
-    desc: '小表格＋自由段落，有生命徵象列。簽名 S…R1…。（逆向自範本 Juli / Kirin）',
+    label: '預設外科格式',
+    desc: '',
     blocks: [
       { type: 'fields', title: '基本資料', fields: [
-        { key: 'date', label: 'Date', ph: 'YYYY.MM.DD' },
+        { key: 'date', label: 'Date', ph: 'YYYY/MM/DD' },
         { key: 'caseNo', label: 'Case No' },
         { key: 'name', label: 'Name（寵物名，可中文）' },
       ]},
       { type: 'fields', title: 'Signalments', fields: [
-        { key: 'age', label: 'Age', ph: '5y/o' },
-        { key: 'sex', label: 'Sex', ph: 'Mc/Fs/M/F' },
-        { key: 'species', label: 'Species', ph: 'canine/feline' },
+        { key: 'age', label: 'Age', ph: '16yo' },
+        { key: 'sex', label: 'Sex', ph: 'Mc/Fsp/M/F' },
+        { key: 'species', label: 'Species', ph: 'Canine/Feline' },
         { key: 'breed', label: 'Breed' },
       ]},
       { type: 'fields', title: 'Temperament', fields: [
-        { key: 'temperament', label: 'Temperament', ph: '個性' },
+        { key: 'temperament', label: 'Temperament' },
       ]},
       { type: 'fields', title: '生命徵象（Vitals）', fields: [
         { key: 'bw', label: 'BW', ph: 'kg' },
-        { key: 'bt', label: 'BT', ph: 'NE 或 °C' },
-        { key: 'hr', label: 'HR', ph: '/bpm' },
+        { key: 'bt', label: 'BT', ph: '°C 或 NE' },
+        { key: 'hr', label: 'HR', ph: 'bpm' },
         { key: 'rr', label: 'RR', ph: '/min' },
-        { key: 'bp', label: 'BP（選填）' },
+        { key: 'bp', label: 'BP', ph: 'mmHg' },
       ]},
       { type: 'section', key: 'cc', label: 'Chief complaint (CC)', required: true },
-      { type: 'section', key: 'hp', label: 'History of present illness (HP)', required: true },
+      { type: 'section', key: 'hp', label: 'History of present illness (HP)', required: true, rows: 5 },
       { type: 'section', key: 'ph', label: 'Past history (PH)' },
       { type: 'section', key: 'eh', label: 'Environment history (EH)' },
-      { type: 'section', key: 'pe', label: 'Physical examination (PE)', required: true },
-      { type: 'section', key: 'be', label: 'Blood exam (BE)' },
+      { type: 'section', key: 'pe', label: 'Physical examination (PE)', required: true, rows: 4 },
+      { type: 'section', key: 'neuro', label: 'Neuro exam' },
+      { type: 'section', key: 'be', label: 'Blood exam' },
       { type: 'section', key: 'rad', label: 'Radiography' },
-      { type: 'section', key: 'ap', label: 'A/P', required: true },
-      { type: 'section', key: 'med', label: 'Medication',
-        ph: '留空 → 自動填 “No medication was prescribed today.”' },
+      { type: 'section', key: 'us', label: 'Ultrasound' },
+      { type: 'section', key: 'cyto', label: 'Cytology' },
+      { type: 'section', key: 'ap', label: 'A/P', required: true, rows: 4 },
+      { type: 'section', key: 'med', label: 'Medication' },
       { type: 'signature', title: '簽名', fields: [
         { key: 'intern', label: 'S（實習醫師）' },
-        { key: 'resident', label: 'R1（住院醫師）' },
       ]},
     ],
   },
 
   B: {
     id: 'B',
-    label: 'Profile B — 特殊格式老師（呼吸道/airway 導向）',
-    desc: 'letterhead ＋ 單格大表格，無生命徵象。用語與 A 不同：present problems / 獨立 DDx / Prescriptions / Sig.。（逆向自範本 Didi）',
+    label: '外科-劉乃潔老師',
+    desc: '',
     blocks: [
       { type: 'fields', title: '基本資料', fields: [
-        { key: 'date', label: 'Date' },
+        { key: 'date', label: 'Date', ph: 'YYYY/MM/DD' },
         { key: 'caseNo', label: 'Case No' },
         { key: 'name', label: 'Name（寵物名，可中文）' },
       ]},
@@ -72,46 +67,53 @@ window.PROFILES = {
       { type: 'fields', title: 'Temperament', fields: [
         { key: 'temperament', label: 'Temperament' },
       ]},
+      { type: 'fields', title: '生命徵象（Vitals）', fields: [
+        { key: 'bw', label: 'BW', ph: 'kg' },
+        { key: 'bcs', label: 'BCS', ph: '/9' },
+        { key: 'bt', label: 'BT', ph: '°C' },
+        { key: 'hr', label: 'HR', ph: 'bpm' },
+        { key: 'bp', label: 'BP', ph: 'mmHg' },
+        { key: 'rr', label: 'RR', ph: 'bpm' },
+      ]},
       { type: 'section', key: 'cc', label: 'Chief complaint (CC)', required: true },
       { type: 'group', key: 'hp', label: 'History of present problems (HP)', subfields: [
-        { key: 's', label: 'S（stool）' },
-        { key: 'a', label: 'A（appetite）' },
-        { key: 'u', label: 'U（urine）' },
-        { key: 'd', label: 'D（drink）' },
-        { key: 'npo', label: 'NPO' },
+        { key: 's', label: 'S（stool）', big: true },
+        { key: 'a', label: 'A（appetite）', big: true },
+        { key: 'u', label: 'U（urine）', big: true },
+        { key: 'd', label: 'D（drink）', big: true },
+        { key: 'npo', label: 'NPO', big: true },
         { key: 'note', label: '其他病程描述', big: true },
       ]},
       { type: 'section', key: 'curmed', label: 'Current medications' },
       { type: 'section', key: 'ph', label: 'Previous history (PH)' },
       { type: 'section', key: 'eh', label: 'Environmental history (EH)' },
       { type: 'group', key: 'pe', label: 'Physical examination (PE)', subfields: [
-        { key: 'presentation', label: 'Presentation (e.g., behaviours)' },
-        { key: 'appearance', label: 'Appearance (e.g., coat, nostrils)' },
-        { key: 'mmcrt', label: 'Mucus membrane and CRT' },
-        { key: 'hydration', label: 'Hydration status' },
-        { key: 'thoracic', label: 'Thoracic auscultation' },
-        { key: 'laryngeal', label: 'Laryngeal auscultation' },
-        { key: 'palpation', label: 'Palpation (body surface, LNs, joints…)' },
-        { key: 'others', label: 'Others' },
+        { key: 'presentation', label: 'Presentation (e.g., behaviours)', big: true },
+        { key: 'appearance', label: 'Appearance (e.g., coat, nostrils)', big: true },
+        { key: 'mmcrt', label: 'Mucus membrane and CRT', big: true },
+        { key: 'hydration', label: 'Hydration status', big: true },
+        { key: 'thoracic', label: 'Thoracic auscultation', big: true },
+        { key: 'laryngeal', label: 'Laryngeal auscultation', big: true },
+        { key: 'palpation', label: 'Palpation (body surface, LNs, joints…)', big: true },
+        { key: 'others', label: 'Others', big: true },
       ]},
-      { type: 'group', key: 'exercise', label: 'Exercise test（airway case 用；非 airway 留空即自動略去）', subfields: [
+      { type: 'group', key: 'exercise', label: 'Exercise test（airway case 用，非 airway 留空即自動略去）', subfields: [
         { key: 'pre', label: 'Pre-exercise summary' },
         { key: 'post', label: 'Post-exercise summary' },
         { key: 'grade', label: 'Respiratory functional grade' },
       ]},
       { type: 'section', key: 'outpatient', label: 'Outpatient test(s) performed' },
-      { type: 'section', key: 'ddx', label: 'DDx（獨立鑑別診斷清單）' },
-      { type: 'section', key: 'ap', label: 'Assessment/plan (A/P)', required: true,
-        ph: '結尾自動補 “RV at .”（回診）' },
+      { type: 'section', key: 'ddx', label: 'DDx' },
+      { type: 'section', key: 'ap', label: 'Assessment/plan (A/P)', required: true, rows: 4 },
       { type: 'section', key: 'rx', label: 'Prescriptions (drug name, dose, frequency, form, duration)' },
       { type: 'signature', title: '簽名', fields: [
-        { key: 'sig', label: 'Sig.' },
+        { key: 'intern', label: 'Sig.（實習醫師）' },
       ]},
     ],
   },
 };
 
-/* 各 block 走訪出所有欄位鍵（含 group 子欄位，key 形如 "pe.mmcrt"） */
+/* 走訪出所有欄位鍵（含 group 子欄位 key 形如 "pe.mmcrt"） */
 window.profileKeys = function (profile) {
   const keys = [];
   for (const b of profile.blocks) {

@@ -1,190 +1,143 @@
 /*
- * .docx 產生器 — 用瀏覽器端 docx.js（全域 window.docx）。
- * 版面依 VetVault WF-0002 逆向的 Profile A / B。
+ * .docx 產生器 — 瀏覽器端 docx.js（全域 window.docx）。
+ * A 預設外科：純段落（無表格）。B 劉乃潔老師：letterhead + 病歷表標題 + 單格大表格。
  * 值物件 values：section 存 values[key]；group 子欄位存 values["key.sub"]。
+ * 內容語言由 AI（OCR/語音）決定；產生器不改語言。
  */
 window.DocxGen = (function () {
-
   function g(values, k) { return (values[k] == null ? '' : String(values[k])).trim(); }
-
   function D() { return window.docx; }
   const BORDER = () => {
     const s = { style: D().BorderStyle.SINGLE, size: 4, color: '000000' };
     return { top: s, bottom: s, left: s, right: s, insideHorizontal: s, insideVertical: s };
   };
 
-  // 一段：可粗體、可置中；文字含 \n 會拆成多行（break）
   function para(text, opts) {
     opts = opts || {};
     const lines = String(text == null ? '' : text).split('\n');
-    const runs = [];
-    lines.forEach((ln, i) => {
-      runs.push(new (D().TextRun)({ text: ln, bold: !!opts.bold, break: i > 0 ? 1 : 0 }));
-    });
+    const runs = lines.map((ln, i) => new (D().TextRun)({ text: ln, bold: !!opts.bold, break: i > 0 ? 1 : 0 }));
     return new (D().Paragraph)({
       children: runs,
       alignment: opts.center ? D().AlignmentType.CENTER : undefined,
       spacing: { after: opts.after == null ? 60 : opts.after },
     });
   }
-
-  // 標題段 + 內容段（內容空則顯示空行）；回傳 Paragraph 陣列
-  function section(label, value) {
-    const out = [para(label + ':', { bold: true, after: 20 })];
+  // 標題(粗體) + 內容；always=true 即使空也保留標題
+  function section(label, value, out, always) {
     const v = (value || '').trim();
-    out.push(para(v.length ? v : '', { after: 120 }));
-    return out;
+    if (!always && !v) return;
+    out.push(para(label + ':', { bold: true, after: 20 }));
+    out.push(para(v, { after: 120 }));
   }
-
   function cell(children, widthPct) {
-    return new (D().TableCell)({
-      children,
-      width: widthPct ? { size: widthPct, type: D().WidthType.PERCENTAGE } : undefined,
-    });
+    return new (D().TableCell)({ children, width: widthPct ? { size: widthPct, type: D().WidthType.PERCENTAGE } : undefined });
   }
 
-  /* ---------------- Profile A ---------------- */
+  /* ---------------- Profile A（無表格） ---------------- */
   function buildA(v) {
-    const children = [];
-
-    // Header 表0：Date | Case No | Name
-    children.push(new (D().Table)({
-      width: { size: 100, type: D().WidthType.PERCENTAGE },
-      borders: BORDER(),
-      rows: [ new (D().TableRow)({ children: [
-        cell([para('Date: ' + g(v, 'date'))], 34),
-        cell([para('Case No: ' + g(v, 'caseNo'))], 33),
-        cell([para('Name: ' + g(v, 'name'))], 33),
-      ]})],
-    }));
-
-    // Signalments / Temperament 段落
+    const c = [];
+    c.push(para('Date: ' + g(v, 'date') + '    Case No: ' + g(v, 'caseNo') + '    Name: ' + g(v, 'name'), { after: 20 }));
     const sig = [g(v, 'age'), g(v, 'sex'), g(v, 'species'), g(v, 'breed')].filter(Boolean).join(', ');
-    children.push(para('Signalments: ' + sig, { after: 20 }));
-    children.push(para('Temperament: ' + g(v, 'temperament'), { after: 60 }));
+    c.push(para('Signalments: ' + sig, { after: 20 }));
+    c.push(para('Temperament: ' + g(v, 'temperament'), { after: 20 }));
+    // Vitals（純文字，無表格）
+    const vit = 'BW: ' + valUnit(g(v, 'bw'), 'kg') + '    BT: ' + (g(v, 'bt') || '') +
+      '    HR: ' + valUnit(g(v, 'hr'), 'bpm') + '    RR: ' + valUnit(g(v, 'rr'), '/min');
+    c.push(para(vit, { after: g(v, 'bp') ? 20 : 100 }));
+    if (g(v, 'bp')) c.push(para('BP: ' + g(v, 'bp'), { after: 100 }));
 
-    // Vitals 表1：BW | BT | HR | RR（第二列空）
-    const vit = (lab, val, unit) => para(lab + ': ' + (val ? val + (unit ? ' ' + unit : '') : ''));
-    children.push(new (D().Table)({
-      width: { size: 100, type: D().WidthType.PERCENTAGE },
-      borders: BORDER(),
-      rows: [
-        new (D().TableRow)({ children: [
-          cell([vit('BW', g(v, 'bw'), 'kg')], 25),
-          cell([vit('BT', g(v, 'bt'), '')], 25),
-          cell([vit('HR', g(v, 'hr'), '/bpm')], 25),
-          cell([vit('RR', g(v, 'rr'), '/min')], 25),
-        ]}),
-        new (D().TableRow)({ children: [cell([para('')]), cell([para('')]), cell([para('')]), cell([para('')])] }),
-      ],
-    }));
-    if (g(v, 'bp')) children.push(para('BP: ' + g(v, 'bp')));
-    children.push(para('', { after: 60 }));
+    section('Chief complaint (CC)', g(v, 'cc'), c, true);
+    section('History of present illness (HP)', g(v, 'hp'), c, true);
+    section('Past history (PH)', g(v, 'ph'), c);
+    section('Environment history (EH)', g(v, 'eh'), c);
+    section('Physical examination (PE)', g(v, 'pe'), c, true);
+    section('Neuro exam', g(v, 'neuro'), c);
+    section('Blood exam', g(v, 'be'), c);
+    section('Radiography', g(v, 'rad'), c);
+    section('Ultrasound', g(v, 'us'), c);
+    section('Cytology', g(v, 'cyto'), c);
+    section('A/P', g(v, 'ap'), c, true);
+    section('Medication', g(v, 'med'), c);
 
-    // Sections
-    const secA = [
-      ['Chief complaint (CC)', 'cc'],
-      ['History of present illness (HP)', 'hp'],
-      ['Past history (PH)', 'ph'],
-      ['Environment history (EH)', 'eh'],
-      ['Physical examination (PE)', 'pe'],
-      ['Blood exam (BE)', 'be'],
-      ['Radiography', 'rad'],
-      ['A/P', 'ap'],
-    ];
-    for (const [label, key] of secA) {
-      if (['ph', 'eh', 'be', 'rad'].includes(key) && !g(v, key)) continue; // 選填空則略去
-      section(label, g(v, key)).forEach((p) => children.push(p));
-    }
-
-    // Medication（空 → 制式句）
-    const med = g(v, 'med') || 'No medication was prescribed today.';
-    section('Medication', med).forEach((p) => children.push(p));
-
-    // 簽名列
-    const s = g(v, 'intern'), r = g(v, 'resident');
-    children.push(para('S ' + s + '    R1 ' + r, { after: 0 }));
-
-    return new (D().Document)({ sections: [{ properties: {}, children }] });
+    c.push(para('S ' + g(v, 'intern'), { after: 0 }));
+    return new (D().Document)({ sections: [{ properties: {}, children: c }] });
   }
 
-  /* ---------------- Profile B ---------------- */
+  /* ---------------- Profile B（單格大表格） ---------------- */
   function buildB(v) {
-    const inner = []; // 單格表格內的所有段落
+    const c = []; // 單格內段落
+    c.push(para('Date: ' + g(v, 'date'), { after: 20 }));
+    c.push(para('Case No: ' + g(v, 'caseNo'), { after: 20 }));
+    c.push(para('Name: ' + g(v, 'name'), { after: 20 }));
+    const sg = [g(v, 'age'), g(v, 'sex'), g(v, 'species'), g(v, 'breed')].filter(Boolean).join(', ');
+    c.push(para('Signalment: ' + sg, { after: 20 }));
+    c.push(para('Temperament: ' + g(v, 'temperament'), { after: 20 }));
+    // Vitals 列（BW/BCS/BT/HR/BP/RR）
+    c.push(para('BW: ' + valUnit(g(v, 'bw'), 'kg') + '    BCS: ' + valUnit(g(v, 'bcs'), '/9') +
+      '    BT: ' + valUnit(g(v, 'bt'), '°C') + '    HR: ' + valUnit(g(v, 'hr'), 'bpm') +
+      '    BP: ' + valUnit(g(v, 'bp'), 'mmHg') + '    RR: ' + valUnit(g(v, 'rr'), 'bpm'), { after: 120 }));
 
-    inner.push(para('Date: ' + g(v, 'date'), { after: 20 }));
-    inner.push(para('Case No: ' + g(v, 'caseNo'), { after: 20 }));
-    inner.push(para('Name: ' + g(v, 'name'), { after: 20 }));
-    const sig = [g(v, 'age'), g(v, 'sex'), g(v, 'species'), g(v, 'breed')].filter(Boolean).join(', ');
-    inner.push(para('Signalment: ' + sig, { after: 20 }));
-    inner.push(para('Temperament: ' + g(v, 'temperament'), { after: 120 }));
+    section('Chief complaint (CC)', g(v, 'cc'), c, true);
 
-    // CC
-    section('Chief complaint (CC)', g(v, 'cc')).forEach((p) => inner.push(p));
+    // HP：S/A/U/D/NPO 拆行 + note
+    c.push(para('History of present problems (HP):', { bold: true, after: 20 }));
+    const hp = (lab, k) => { const val = g(v, 'hp.' + k); if (val) c.push(para(lab + ': ' + val, { after: 20 })); };
+    hp('S', 's'); hp('A', 'a'); hp('U', 'u'); hp('D', 'd'); hp('NPO', 'npo');
+    c.push(para(g(v, 'hp.note'), { after: 120 }));
 
-    // HP：S/A/U/D/NPO 拆多行
-    inner.push(para('History of present problems (HP):', { bold: true, after: 20 }));
-    const hpLine = (lab, k) => { const val = g(v, 'hp.' + k); if (val) inner.push(para(lab + ': ' + val, { after: 20 })); };
-    hpLine('S', 's'); hpLine('A', 'a'); hpLine('U', 'u'); hpLine('D', 'd'); hpLine('NPO', 'npo');
-    if (g(v, 'hp.note')) inner.push(para(g(v, 'hp.note'), { after: 120 })); else inner.push(para('', { after: 100 }));
-
-    // Current medications
-    if (g(v, 'curmed')) section('Current medications', g(v, 'curmed')).forEach((p) => inner.push(p));
-    if (g(v, 'ph')) section('Previous history (PH)', g(v, 'ph')).forEach((p) => inner.push(p));
-    if (g(v, 'eh')) section('Environmental history (EH)', g(v, 'eh')).forEach((p) => inner.push(p));
+    section('Current medications', g(v, 'curmed'), c, true);
+    section('Previous history (PH)', g(v, 'ph'), c, true);
+    section('Environmental history (EH)', g(v, 'eh'), c, true);
 
     // PE 結構化子欄位（保留提示語）
-    inner.push(para('Physical examination (PE):', { bold: true, after: 20 }));
-    const peLine = (lab, k) => inner.push(para(lab + ': ' + g(v, 'pe.' + k), { after: 20 }));
-    peLine('Presentation (e.g., behaviours)', 'presentation');
-    peLine('Appearance (e.g., coat, nostrils)', 'appearance');
-    peLine('Mucus membrane and CRT', 'mmcrt');
-    peLine('Hydration status', 'hydration');
-    peLine('Thoracic auscultation', 'thoracic');
-    peLine('Laryngeal auscultation', 'laryngeal');
-    peLine('Palpation (e.g., body surface, LNs, joints, testis, pain…)', 'palpation');
-    if (g(v, 'pe.others')) peLine('Others', 'others');
+    c.push(para('Physical examination (PE):', { bold: true, after: 20 }));
+    const pe = (lab, k) => c.push(para(lab + ': ' + g(v, 'pe.' + k), { after: 20 }));
+    pe('Presentation (e.g., behaviours)', 'presentation');
+    pe('Appearance (e.g., coat, nostrils)', 'appearance');
+    pe('Mucus membrane and CRT', 'mmcrt');
+    pe('Hydration status', 'hydration');
+    pe('Thoracic auscultation', 'thoracic');
+    pe('Laryngeal auscultation', 'laryngeal');
+    pe('Palpation (e.g., body surface, LNs, joints, testis, pain…)', 'palpation');
+    pe('Others', 'others');
 
-    // Exercise test（有值才放）
     if (g(v, 'exercise.pre') || g(v, 'exercise.post') || g(v, 'exercise.grade')) {
-      inner.push(para('Exercise test:', { bold: true, after: 20 }));
-      inner.push(para('Pre-exercise summary: ' + g(v, 'exercise.pre'), { after: 20 }));
-      inner.push(para('Post-exercise summary: ' + g(v, 'exercise.post'), { after: 20 }));
-      inner.push(para('Respiratory functional grade: ' + g(v, 'exercise.grade'), { after: 120 }));
-    } else {
-      inner.push(para('', { after: 100 }));
+      c.push(para('Exercise test:', { bold: true, after: 20 }));
+      c.push(para('Pre-exercise summary: ' + g(v, 'exercise.pre'), { after: 20 }));
+      c.push(para('Post-exercise summary: ' + g(v, 'exercise.post'), { after: 20 }));
+      c.push(para('Respiratory functional grade: ' + g(v, 'exercise.grade'), { after: 120 }));
     }
 
-    if (g(v, 'outpatient')) section('Outpatient test(s) performed', g(v, 'outpatient')).forEach((p) => inner.push(p));
-    if (g(v, 'ddx')) section('DDx', g(v, 'ddx')).forEach((p) => inner.push(p));
+    section('Outpatient test(s) performed', g(v, 'outpatient'), c, true);
+    section('DDx', g(v, 'ddx'), c, true);
 
-    // A/P（結尾補 RV at .）
     let ap = g(v, 'ap');
     if (ap && !/RV\s+at/i.test(ap)) ap = ap + '\nRV at  .';
-    section('Assessment/plan (A/P)', ap).forEach((p) => inner.push(p));
+    else if (!ap) ap = 'RV at  .';
+    section('Assessment/plan (A/P)', ap, c, true);
 
-    if (g(v, 'rx')) section('Prescriptions (drug name, dose, frequency, form, duration)', g(v, 'rx')).forEach((p) => inner.push(p));
+    section('Prescriptions (drug name, dose, frequency, form, duration)', g(v, 'rx'), c, true);
+    c.push(para('Sig. ' + g(v, 'intern'), { after: 0 }));
 
-    inner.push(para('Sig. ' + g(v, 'sig'), { after: 0 }));
-
-    // 外層：letterhead + 置中標題 + 單格 1×1 表格
-    const children = [
+    const docChildren = [
       para('國立臺灣大學生物資源暨農學院附設動物醫院', { after: 40 }),
       para('病　歷　表', { bold: true, center: true, after: 120 }),
       new (D().Table)({
         width: { size: 100, type: D().WidthType.PERCENTAGE },
         borders: BORDER(),
-        rows: [ new (D().TableRow)({ children: [cell(inner, 100)] }) ],
+        rows: [ new (D().TableRow)({ children: [cell(c, 100)] }) ],
       }),
     ];
-    return new (D().Document)({ sections: [{ properties: {}, children }] });
+    return new (D().Document)({ sections: [{ properties: {}, children: docChildren }] });
   }
+
+  function valUnit(val, unit) { return val ? (val + (unit ? ' ' + unit : '')) : ''; }
 
   function filename(profileId, v) {
     const name = g(v, 'name') || 'case';
     const date = g(v, 'date') || '';
     const safe = (name + (date ? '_' + date : '')).replace(/[\\/:*?"<>|]/g, '-');
-    return '病歷_' + safe + '_Profile' + profileId + '.docx';
+    return '病歷_' + safe + '_' + (profileId === 'A' ? '外科' : '劉乃潔') + '.docx';
   }
 
   async function exportDocx(profileId, values) {

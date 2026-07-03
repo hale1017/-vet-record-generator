@@ -40,9 +40,9 @@ window.AI = (function () {
     const spec = window.profileKeys(profile)
       .filter((k) => !['intern', 'resident', 'sig'].includes(k.key))
       .map((k) => `- "${k.key}": ${k.label}`).join('\n');
-    return '你是獸醫病歷謄寫助理。附圖是一張「已去識別化」的手寫獸醫病歷，內容中英夾雜、含臨床縮寫。\n' +
-      '請擷取可辨識的資訊，填入下列 JSON 欄位。規則：\n' +
-      '1. 內容一律翻成簡潔的英文臨床書寫；但「name」(寵物名) 與任何醫院名稱保留原文（可中文）。\n' +
+    return '你是獸醫病歷謄寫助理。附圖是一張或多張「已去識別化」的手寫獸醫病歷（可能是同一份病歷的多頁），內容中英夾雜、含臨床縮寫。\n' +
+      '請綜合所有圖片，擷取可辨識的資訊，填入下列 JSON 欄位。規則：\n' +
+      '1. 內容一律翻成簡潔的英文臨床書寫；**只有專有名詞（寵物名 name、醫院名稱、飼料/食品品牌）保留原文（可中文）**，其餘全部英文。\n' +
       '2. 保留標準縮寫（BCS, MM, CRT, S/A/U/D, AUS, PLNs 等），不要展開。\n' +
       '3. 影像沒有的欄位一律給空字串 ""，絕不虛構臨床數據。\n' +
       '4. 只輸出 JSON 物件，鍵必須完全等於下列清單（含點號的鍵照原樣）。\n\n' +
@@ -54,39 +54,56 @@ window.AI = (function () {
     return out;
   }
 
-  /* ---- 對外：OCR ---- */
-  async function ocrRecord(imageDataUrl, profile) {
+  /* ---- 對外：OCR（吃單張或多張影像） ---- */
+  async function ocrRecord(images, profile) {
     const p = getProvider();
     if (!getKey(p)) throw new Error('尚未設定 ' + p + ' API key');
-    if (!imageDataUrl) throw new Error('沒有可辨識的影像');
+    const arr = (Array.isArray(images) ? images : [images]).filter(Boolean);
+    if (!arr.length) throw new Error('沒有可辨識的影像');
     const prompt = ocrPrompt(profile);
-    const raw = p === 'gemini' ? await geminiOcr(prompt, imageDataUrl) : await openaiOcr(prompt, imageDataUrl);
+    const raw = p === 'gemini' ? await geminiOcr(prompt, arr) : await openaiOcr(prompt, arr);
     let obj = {};
     try { obj = JSON.parse(stripFence(raw)); } catch (e) { throw new Error('AI 回傳非 JSON'); }
     return pickKeys(obj, ocrKeys(profile));
   }
 
-  /* ---- 對外：轉錄 ---- */
+  /* ---- 對外：語音轉錄（回傳「英文」，專有名詞保留中文） ---- */
   async function transcribe(audioBlob) {
     const p = getProvider();
     if (!getKey(p)) throw new Error('尚未設定 ' + p + ' API key');
-    return p === 'gemini' ? geminiTranscribe(audioBlob) : openaiTranscribe(audioBlob);
+    if (p === 'gemini') return geminiTranscribe(audioBlob);           // Gemini 一次做「轉錄+翻譯」
+    const zh = await openaiTranscribe(audioBlob);                     // Whisper 轉原文
+    return zh ? openaiTranslate(zh) : '';                             // 再翻成英文
   }
 
   /* ================= OpenAI ================= */
-  async function openaiOcr(prompt, imageDataUrl) {
+  async function openaiOcr(prompt, images) {
+    const content = [{ type: 'text', text: prompt }].concat(images.map((u) => ({ type: 'image_url', image_url: { url: u } })));
     const res = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + getKey('openai') },
       body: JSON.stringify({
         model: getModel('openai'),
-        messages: [{ role: 'user', content: [{ type: 'text', text: prompt }, { type: 'image_url', image_url: { url: imageDataUrl } }] }],
+        messages: [{ role: 'user', content }],
         response_format: { type: 'json_object' }, temperature: 0,
       }),
     });
     if (!res.ok) throw new Error(await errMsg(res, 'openai'));
     const d = await res.json();
     return d.choices[0].message.content;
+  }
+  async function openaiTranslate(text) {
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + getKey('openai') },
+      body: JSON.stringify({
+        model: getModel('openai'), temperature: 0,
+        messages: [{ role: 'user', content:
+          '把下面的獸醫病歷內容翻成簡潔的英文臨床書寫。只有專有名詞（醫院名、寵物名、飼料/食品品牌）保留中文原文，其餘全部英文。保留臨床縮寫。只輸出翻譯後的文字。\n\n' + text }],
+      }),
+    });
+    if (!res.ok) throw new Error(await errMsg(res, 'openai'));
+    return (((await res.json()).choices[0].message.content) || '').trim();
   }
   async function openaiTranscribe(blob) {
     const fd = new FormData();
@@ -103,12 +120,12 @@ window.AI = (function () {
     return 'https://generativelanguage.googleapis.com/v1beta/models/' + model +
       ':generateContent?key=' + encodeURIComponent(getKey('gemini'));
   }
-  async function geminiOcr(prompt, imageDataUrl) {
-    const b64 = imageDataUrl.split(',')[1];
+  async function geminiOcr(prompt, images) {
+    const parts = [{ text: prompt }].concat(images.map((u) => ({ inline_data: { mime_type: 'image/jpeg', data: u.split(',')[1] } })));
     const res = await fetch(gUrl(getModel('gemini')), {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }, { inline_data: { mime_type: 'image/jpeg', data: b64 } }] }],
+        contents: [{ parts }],
         generationConfig: { temperature: 0, response_mime_type: 'application/json' },
       }),
     });
@@ -122,7 +139,7 @@ window.AI = (function () {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{ parts: [
-          { text: '請逐字轉錄這段語音，只輸出轉錄文字本身，不要加任何說明。' },
+          { text: '請把這段語音轉錄後翻成簡潔的英文臨床書寫。只有專有名詞（醫院名、寵物名、飼料/食品品牌）保留中文原文，其餘全部英文。保留臨床縮寫。只輸出結果文字，不要加任何說明。' },
           { inline_data: { mime_type: blob.type || 'audio/webm', data: b64 } },
         ] }],
       }),

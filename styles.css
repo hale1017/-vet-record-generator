@@ -43,8 +43,10 @@ main { max-width: 860px; margin: 16px auto; padding: 0 20px 40px; }
 input:focus, textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(47,111,106,.12); }
 
 .redact { margin: 14px 0; }
-.canvas-wrap { margin: 10px 0; border: 1px dashed var(--line); border-radius: 10px; padding: 8px; background: #fafbfc; overflow: auto; text-align: center; }
-#redactCanvas { max-width: 100%; cursor: crosshair; touch-action: none; }
+.redact-pages { display: flex; flex-direction: column; gap: 12px; margin: 10px 0; }
+.page-wrap { border: 1px dashed var(--line); border-radius: 10px; padding: 8px; background: #fafbfc; text-align: center; }
+.page-cap { margin-bottom: 6px; font-size: .8rem; }
+.page-wrap canvas { max-width: 100%; cursor: crosshair; touch-action: none; }
 .redact-tools { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 
 .actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; flex-wrap: wrap; }

@@ -46,25 +46,22 @@
 
   /* ---- Step 2: 去識別化 ---- */
   function initRedaction() {
-    window.Redaction.init($('#redactCanvas'));
+    window.Redaction.init($('#redactPages'));
+    window.Redaction.setOnChange(updateRedactUI);
     $('#photoInput').onchange = async (e) => {
-      const f = e.target.files[0];
-      if (!f) return;
-      try { await window.Redaction.loadFile(f); $('#redactHint').textContent = '在照片上按住拖曳，蓋掉飼主姓名/電話/病歷號/晶片號。'; updateRedactUI(); }
+      const files = e.target.files;
+      if (!files || !files.length) return;
+      try { await window.Redaction.addFiles(files); updateRedactUI(); }
       catch (err) { alert('讀取影像失敗：' + err); }
+      e.target.value = ''; // 允許再加同一張或更多張
     };
-    $('#undoBox').onclick = () => { window.Redaction.undo(); updateRedactUI(); };
-    $('#clearBox').onclick = () => { window.Redaction.clearBoxes(); updateRedactUI(); };
-    $('#dlRedacted').onclick = () => {
-      const url = window.Redaction.toDataURL(); if (!url) return;
-      const a = el('a'); a.href = url; a.download = 'redacted.jpg'; a.click();
-    };
+    $('#undoBox').onclick = () => window.Redaction.undoLast();
+    $('#clearBox').onclick = () => window.Redaction.clearAll();
   }
   function updateRedactUI() {
     const has = window.Redaction.hasImage();
-    $('#undoBox').disabled = !has; $('#clearBox').disabled = !has; $('#dlRedacted').disabled = !has;
-    $('#aiFill').disabled = !has;
-    $('#boxCount').textContent = has ? ('已標記 ' + window.Redaction.boxCount() + ' 個遮蔽區塊') : '';
+    $('#undoBox').disabled = !has; $('#clearBox').disabled = !has; $('#aiFill').disabled = !has;
+    $('#boxCount').textContent = has ? (window.Redaction.pageCount() + ' 張照片，已標記 ' + window.Redaction.boxCount() + ' 個遮蔽區塊') : '';
   }
 
   /* ---- AI 設定（雙供應商） ---- */
@@ -98,13 +95,13 @@
 
   /* ---- AI 辨識照片 → 預填欄位 ---- */
   async function aiFill() {
-    if (!window.AI.hasKey()) { alert('請先在右上「⚙ 設定」填入 OpenAI API key'); openSettings(); return; }
-    const img = window.Redaction.toDataURL();
-    if (!img) { alert('請先上傳一張照片'); return; }
+    if (!window.AI.hasKey()) { alert('請先在右上「⚙ 設定」填入 API key'); openSettings(); return; }
+    const imgs = window.Redaction.toDataURLs();
+    if (!imgs.length) { alert('請先上傳照片'); return; }
     const btn = $('#aiFill'), status = $('#aiStatus');
-    btn.disabled = true; status.textContent = 'AI 辨識中…（約數秒）';
+    btn.disabled = true; status.textContent = 'AI 辨識中…（' + imgs.length + ' 張，約數秒）';
     try {
-      const vals = await window.AI.ocrRecord(img, window.PROFILES[state.profileId]);
+      const vals = await window.AI.ocrRecord(imgs, window.PROFILES[state.profileId]);
       Object.assign(state.values, vals);
       status.textContent = '✓ 已填入 ' + Object.keys(vals).length + ' 個欄位，請到下一步確認';
       show(3);
@@ -175,9 +172,9 @@
         root.append(group);
       } else if (b.type === 'section') {
         const group = el('div', 'block');
+        group.append(el('h3', 'block-h', b.label + (b.required ? ' *' : '')));
         const lab = el('label', 'fld');
-        lab.append(el('span', 'fld-label', b.label + (b.required ? ' *' : '')));
-        const ta = el('textarea'); ta.dataset.key = b.key; ta.rows = 3; if (b.ph) ta.placeholder = b.ph;
+        const ta = el('textarea'); ta.dataset.key = b.key; ta.rows = b.rows || 3; if (b.ph) ta.placeholder = b.ph;
         if (state.values[b.key]) ta.value = state.values[b.key];
         lab.append(ta); lab.append(attachMic(ta)); group.append(lab); root.append(group);
       } else if (b.type === 'group') {
@@ -242,7 +239,7 @@
     $('#toStep2').onclick = () => show(2);
     $('#back1').onclick = () => show(1);
     $('#skipPhoto').onclick = () => show(3);
-    $('#toStep3').onclick = () => { state.redacted = window.Redaction.toDataURL(); show(3); };
+    $('#toStep3').onclick = () => show(3);
     $('#back2').onclick = () => show(2);
     $('#toStep4').onclick = () => { collect(); show(4); };
     $('#back3').onclick = () => show(3);
