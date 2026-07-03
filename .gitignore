@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.env
+.env.local
+*.log
+.DS_Store
+# 絕不 commit 真實病歷 / API key
+*.key
+secrets/
+samples_real/
