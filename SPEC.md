@@ -70,7 +70,12 @@
 - ✅ 方向定案（2026-07-03）。
 - ✅ 臨床格式已逆向（Profile A/B），權威來源在 VetVault WF-0002。
 - ✅ **MVP 第一版完成（2026-07-03，先不接 AI）**：4 步精靈（選格式 → 上傳照片+client 端去識別化 → 填欄位 → 確認匯出）；Profile A/B 皆可產出 `.docx`（瀏覽器測試通過，兩範本各約 8KB）。
-  - 檔案：`index.html`、`styles.css`、`js/{profiles,redaction,docx-generator,app}.js`。
-  - docx.js CDN：`https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js`（**必須是 `index.umd.js`** 才會掛上全域 `docx`；`build/index.js` 不行）。
-  - 本機預覽：`python -m http.server 8000` 後開 `http://localhost:8000`。
-- ⏳ **下一步**：① 接 vision AI（redacted 影像 → OCR＋欄位對應＋中英翻譯，預填步驟 3）；② 接語音轉錄；③ BYO key 設定介面；④ 推 GitHub + 靜態託管上線。
+- ✅ **AI 功能完成（2026-07-03）**：
+  - **BYO key 設定介面**（⚙ 設定 modal）：OpenAI key + 模型（gpt-4o / gpt-4o-mini），存 localStorage，只在使用者本機。
+  - **照片 AI 辨識預填**：步驟 2「用 AI 辨識照片並填入欄位」→ GPT-4o vision 讀 redacted 影像 → 依 profile 欄位輸出 JSON（中英翻譯、name/醫院名留中文、不虛構）→ 預填步驟 3。
+  - **語音轉錄**：步驟 3 每個自由欄位旁 🎤 → MediaRecorder 錄音 → Whisper 轉文字 → 附加進該欄位。
+  - 檔案：新增 `js/ai.js`（provider 抽象，目前 OpenAI）。
+  - **已驗證**：模組載入、key 存取、modal、mic 綁定（A 9 顆 / B 25 顆）、docx 產出、且 `api.openai.com` **支援瀏覽器直呼（CORS 通過，非 preflight 阻擋）** → 純前端 BYO key 架構成立。
+  - ⚠️ 未驗證（需真實 key + 真實手寫病歷）：OCR/轉錄的實際品質。
+  - 技術備忘：docx CDN **必須 `build/index.umd.js`**（`index.js` 不掛全域 `docx`）。本機預覽 `python -m http.server 8000`。
+- ⏳ **下一步**：④ 推 GitHub + 免費靜態託管上線（Cloudflare/GitHub Pages）給同學用；用真實去識別化病歷實測 OCR/轉錄品質並微調 prompt；視情況加 Claude vision 選項。

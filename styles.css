@@ -67,3 +67,22 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .rev-v { white-space: pre-wrap; }
 
 .foot { max-width: 860px; margin: 0 auto 30px; padding: 0 20px; color: var(--muted); font-size: .78rem; text-align: center; }
+
+/* 設定齒輪 */
+.top { position: relative; }
+.gear { position: absolute; top: 22px; right: 20px; font-size: .82rem; padding: 6px 12px; background: #fff; }
+
+/* AI 辨識列 */
+.ai-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 12px; }
+
+/* 麥克風按鈕 */
+.mic { align-self: flex-start; margin-top: 4px; padding: 4px 10px; font-size: .85rem; line-height: 1; }
+.mic.rec { background: #fee2e2; border-color: var(--err); color: var(--err); animation: pulse 1s infinite; }
+@keyframes pulse { 50% { opacity: .55; } }
+
+/* Modal */
+.modal { position: fixed; inset: 0; background: rgba(20,24,30,.5); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 50; }
+.modal-box { background: #fff; border-radius: 14px; padding: 22px; width: 100%; max-width: 460px; box-shadow: 0 20px 60px rgba(0,0,0,.25); }
+.modal-box h3 { margin: 0 0 8px; }
+.modal-box .fld { margin: 12px 0; }
+.modal-box select { padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; font: inherit; }

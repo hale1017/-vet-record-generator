@@ -63,11 +63,73 @@
   function updateRedactUI() {
     const has = window.Redaction.hasImage();
     $('#undoBox').disabled = !has; $('#clearBox').disabled = !has; $('#dlRedacted').disabled = !has;
+    $('#aiFill').disabled = !has;
     $('#boxCount').textContent = has ? ('已標記 ' + window.Redaction.boxCount() + ' 個遮蔽區塊') : '';
   }
 
+  /* ---- AI 設定 ---- */
+  function openSettings() {
+    $('#apiKeyInput').value = window.AI.getKey();
+    $('#modelSelect').value = window.AI.getModel();
+    $('#settingsModal').style.display = 'flex';
+  }
+  function closeSettings() { $('#settingsModal').style.display = 'none'; }
+  function saveSettings() {
+    window.AI.setKey($('#apiKeyInput').value);
+    window.AI.setModel($('#modelSelect').value);
+    closeSettings();
+  }
+
+  /* ---- AI 辨識照片 → 預填欄位 ---- */
+  async function aiFill() {
+    if (!window.AI.hasKey()) { alert('請先在右上「⚙ 設定」填入 OpenAI API key'); openSettings(); return; }
+    const img = window.Redaction.toDataURL();
+    if (!img) { alert('請先上傳一張照片'); return; }
+    const btn = $('#aiFill'), status = $('#aiStatus');
+    btn.disabled = true; status.textContent = 'AI 辨識中…（約數秒）';
+    try {
+      const vals = await window.AI.ocrRecord(img, window.PROFILES[state.profileId]);
+      Object.assign(state.values, vals);
+      status.textContent = '✓ 已填入 ' + Object.keys(vals).length + ' 個欄位，請到下一步確認';
+      show(3);
+    } catch (e) {
+      status.textContent = '';
+      alert('AI 辨識失敗：' + e.message);
+    } finally { btn.disabled = false; }
+  }
+
+  /* ---- 語音錄音 → Whisper 轉錄 → 填入欄位 ---- */
+  let activeRec = null;
+  function attachMic(target) {
+    const btn = el('button', 'mic', '🎤'); btn.type = 'button'; btn.title = '錄音轉文字（Whisper）';
+    btn.onclick = (e) => { e.preventDefault(); toggleMic(btn, target); };
+    return btn;
+  }
+  async function toggleMic(btn, target) {
+    if (activeRec) { const a = activeRec; activeRec = null; a.recorder.stop(); return; } // 停止目前錄音
+    if (!window.AI.hasKey()) { alert('請先在右上「⚙ 設定」填入 OpenAI API key'); openSettings(); return; }
+    let stream;
+    try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
+    catch (e) { alert('無法存取麥克風：' + e.message); return; }
+    const chunks = [];
+    const rec = new MediaRecorder(stream);
+    rec.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
+    rec.onstop = async () => {
+      stream.getTracks().forEach((t) => t.stop());
+      btn.classList.remove('rec'); btn.textContent = '🎤';
+      const blob = new Blob(chunks, { type: 'audio/webm' });
+      btn.disabled = true; const prev = target.value;
+      try { const txt = await window.AI.transcribe(blob); if (txt) target.value = (prev ? prev + ' ' : '') + txt; }
+      catch (e) { alert('轉錄失敗：' + e.message); }
+      btn.disabled = false;
+    };
+    rec.start(); btn.classList.add('rec'); btn.textContent = '⏹';
+    activeRec = { btn, recorder: rec };
+  }
+
   /* ---- Step 3: 表單 ---- */
-  function inputFor(f, keyPrefix) {
+  function inputFor(f, keyPrefix, opts) {
+    opts = opts || {};
     const key = keyPrefix ? keyPrefix + '.' + f.key : f.key;
     const box = el('label', 'fld');
     box.append(el('span', 'fld-label', f.label + (f.required ? ' *' : '')));
@@ -78,6 +140,7 @@
     if (state.values[key]) inp.value = state.values[key];
     if (big) inp.rows = 2;
     box.append(inp);
+    if (opts.mic) box.append(attachMic(inp));
     return box;
   }
 
@@ -100,12 +163,12 @@
         lab.append(el('span', 'fld-label', b.label + (b.required ? ' *' : '')));
         const ta = el('textarea'); ta.dataset.key = b.key; ta.rows = 3; if (b.ph) ta.placeholder = b.ph;
         if (state.values[b.key]) ta.value = state.values[b.key];
-        lab.append(ta); group.append(lab); root.append(group);
+        lab.append(ta); lab.append(attachMic(ta)); group.append(lab); root.append(group);
       } else if (b.type === 'group') {
         const group = el('div', 'block');
         group.append(el('h3', 'block-h', b.label));
         const row = el('div', 'row');
-        b.subfields.forEach((s) => row.append(inputFor(s, b.key)));
+        b.subfields.forEach((s) => row.append(inputFor(s, b.key, { mic: true })));
         group.append(row); root.append(group);
       }
     }
@@ -168,6 +231,11 @@
     $('#toStep4').onclick = () => { collect(); show(4); };
     $('#back3').onclick = () => show(3);
     $('#exportBtn').onclick = doExport;
+    $('#openSettings').onclick = openSettings;
+    $('#settingsClose').onclick = closeSettings;
+    $('#settingsSave').onclick = saveSettings;
+    $('#settingsModal').addEventListener('click', (e) => { if (e.target.id === 'settingsModal') closeSettings(); });
+    $('#aiFill').onclick = aiFill;
     if (!window.docx) $('#cdnWarn').style.display = 'block';
   }
 

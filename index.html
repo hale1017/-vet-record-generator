@@ -8,8 +8,9 @@
 </head>
 <body>
   <header class="top">
+    <button id="openSettings" class="gear" title="AI 設定">⚙ 設定</button>
     <h1>病歷自動生成器 <span class="mvp">MVP</span></h1>
-    <p class="sub">選格式 → 上傳照片去識別化 → 填欄位 → 匯出 Word（.docx）。本版尚未接 AI，欄位手動填。</p>
+    <p class="sub">選格式 → 上傳照片去識別化 →（AI 辨識預填 / 語音補充）→ 確認 → 匯出 Word（.docx）。</p>
   </header>
 
   <nav class="stepper">
@@ -45,6 +46,10 @@
           <button id="clearBox" disabled>清除全部</button>
           <button id="dlRedacted" disabled>下載去識別化影像</button>
           <span id="boxCount" class="muted"></span>
+        </div>
+        <div class="ai-row">
+          <button id="aiFill" class="primary" disabled>🔎 用 AI 辨識照片並填入欄位</button>
+          <span id="aiStatus" class="muted"></span>
         </div>
       </div>
       <div class="actions">
@@ -82,8 +87,29 @@
     臨床格式權威來源：VetVault WF-0002 · 產出僅供輔助，最終內容由醫師本人確認負責。
   </footer>
 
+  <!-- AI 設定 modal -->
+  <div id="settingsModal" class="modal" style="display:none">
+    <div class="modal-box">
+      <h3>AI 設定（自帶 API key）</h3>
+      <p class="muted">目前用 <b>OpenAI</b>：GPT-4o 辨識照片、Whisper 轉錄語音。<b>key 只存在你這台瀏覽器</b>，不會上傳到任何伺服器；費用計在你自己的 OpenAI 帳號。</p>
+      <label class="fld"><span class="fld-label">OpenAI API key</span>
+        <input id="apiKeyInput" type="password" placeholder="sk-..." autocomplete="off" /></label>
+      <label class="fld"><span class="fld-label">辨識模型</span>
+        <select id="modelSelect">
+          <option value="gpt-4o">gpt-4o（預設，較準）</option>
+          <option value="gpt-4o-mini">gpt-4o-mini（較便宜）</option>
+        </select></label>
+      <p class="muted">沒有 key？到 platform.openai.com → API keys 申請一組。</p>
+      <div class="actions">
+        <button id="settingsClose" class="ghost">關閉</button>
+        <button id="settingsSave" class="primary">儲存</button>
+      </div>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js"></script>
   <script src="js/profiles.js"></script>
+  <script src="js/ai.js"></script>
   <script src="js/redaction.js"></script>
   <script src="js/docx-generator.js"></script>
   <script src="js/app.js"></script>
