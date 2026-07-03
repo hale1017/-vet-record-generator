@@ -91,15 +91,18 @@
   <div id="settingsModal" class="modal" style="display:none">
     <div class="modal-box">
       <h3>AI 設定（自帶 API key）</h3>
-      <p class="muted">目前用 <b>OpenAI</b>：GPT-4o 辨識照片、Whisper 轉錄語音。<b>key 只存在你這台瀏覽器</b>，不會上傳到任何伺服器；費用計在你自己的 OpenAI 帳號。</p>
-      <label class="fld"><span class="fld-label">OpenAI API key</span>
-        <input id="apiKeyInput" type="password" placeholder="sk-..." autocomplete="off" /></label>
-      <label class="fld"><span class="fld-label">辨識模型</span>
-        <select id="modelSelect">
-          <option value="gpt-4o">gpt-4o（預設，較準）</option>
-          <option value="gpt-4o-mini">gpt-4o-mini（較便宜）</option>
+      <p class="muted"><b>key 只存在你這台瀏覽器</b>，不會上傳到任何伺服器。一把 key 同時用於照片辨識與語音轉錄。</p>
+      <label class="fld"><span class="fld-label">AI 供應商</span>
+        <select id="providerSelect">
+          <option value="openai">OpenAI（付費，較穩、不拿資料訓練）</option>
+          <option value="gemini">Google Gemini（有免費額度）</option>
         </select></label>
-      <p class="muted">沒有 key？到 platform.openai.com → API keys 申請一組。</p>
+      <p id="provHint" class="muted"></p>
+      <label class="fld"><span class="fld-label" id="keyLabel">API key</span>
+        <input id="apiKeyInput" type="password" placeholder="貼上 API key" autocomplete="off" /></label>
+      <label class="fld"><span class="fld-label">模型</span>
+        <select id="modelSelect"></select></label>
+      <p id="keyHelp" class="muted"></p>
       <div class="actions">
         <button id="settingsClose" class="ghost">關閉</button>
         <button id="settingsSave" class="primary">儲存</button>

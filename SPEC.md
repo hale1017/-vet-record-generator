@@ -23,7 +23,7 @@
 |---|---|---|
 | **形式** | **純前端瀏覽器網頁 App**（無後端伺服器） | 天生跨平台（不用分 Mac/Win 打包）；靜態託管可免費 |
 | **託管** | 免費靜態託管（Cloudflare Pages / GitHub Pages 免費額度） | host 端零月租 |
-| **AI 費用** | **BYO API key**：每位使用者自帶 OpenAI/Anthropic key，呼叫從自己瀏覽器發出、費用算自己 | 讓 host「盡量免費」；破解「免費 vs 雲端 AI 成本」矛盾 |
+| **AI 費用** | **BYO API key**，兩家可選：**OpenAI**（付費、不拿資料訓練）或 **Google Gemini**（有免費額度）。使用者在設定裡自選，呼叫從自己瀏覽器發出 | 讓 host「盡量免費」；OpenAI API 無免費方案，想全免費用 Gemini（代價：免費版資料可能被 Google 使用、有每日上限） |
 | **成本量級（供參）** | 雲端 vision+STT+翻譯每份約 $0.02–0.10；20–40 人×5 份/日 ≈ $100–300/月 | 這筆錢必須有人付 → 用 BYO key 分攤到各使用者 |
 | **隱私（VetVault Rule 4）** | **去識別化在使用者電腦端做完再送雲端**：上傳後先在螢幕框掉/塗掉飼主姓名、電話、病歷號、晶片號，redacted 影像才送 AI | 真實病歷屬敏感資料，不得整張原圖上雲 |
 | **OCR 輸入** | 手寫**中英夾雜＋專有縮寫** → vision AI 辨識，餵縮寫詞彙表輔助 | 已知手寫特性 |
@@ -74,8 +74,8 @@
   - **BYO key 設定介面**（⚙ 設定 modal）：OpenAI key + 模型（gpt-4o / gpt-4o-mini），存 localStorage，只在使用者本機。
   - **照片 AI 辨識預填**：步驟 2「用 AI 辨識照片並填入欄位」→ GPT-4o vision 讀 redacted 影像 → 依 profile 欄位輸出 JSON（中英翻譯、name/醫院名留中文、不虛構）→ 預填步驟 3。
   - **語音轉錄**：步驟 3 每個自由欄位旁 🎤 → MediaRecorder 錄音 → Whisper 轉文字 → 附加進該欄位。
-  - 檔案：新增 `js/ai.js`（provider 抽象，目前 OpenAI）。
-  - **已驗證**：模組載入、key 存取、modal、mic 綁定（A 9 顆 / B 25 顆）、docx 產出、且 `api.openai.com` **支援瀏覽器直呼（CORS 通過，非 preflight 阻擋）** → 純前端 BYO key 架構成立。
-  - ⚠️ 未驗證（需真實 key + 真實手寫病歷）：OCR/轉錄的實際品質。
+  - 檔案：`js/ai.js`（**雙供應商** OpenAI / Gemini，可在設定切換；兩家 key 分開存 localStorage）。
+  - **已驗證**：模組載入、供應商切換與分開存 key、設定 modal 動態切換、mic 綁定（A 9 顆 / B 25 顆）、docx 產出；且 **`api.openai.com` 與 `generativelanguage.googleapis.com` 皆支援瀏覽器直呼（CORS 通過）** → 純前端 BYO key 架構對兩家都成立。
+  - ⚠️ 未驗證（需真實 key + 真實手寫病歷）：OCR/轉錄的實際品質；Gemini 音訊對 webm 格式的接受度（Chrome MediaRecorder 產 webm/opus，若 Gemini 拒收再調錄音格式或該情境改用 OpenAI）。
   - 技術備忘：docx CDN **必須 `build/index.umd.js`**（`index.js` 不掛全域 `docx`）。本機預覽 `python -m http.server 8000`。
 - ⏳ **下一步**：④ 推 GitHub + 免費靜態託管上線（Cloudflare/GitHub Pages）給同學用；用真實去識別化病歷實測 OCR/轉錄品質並微調 prompt；視情況加 Claude vision 選項。

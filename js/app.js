@@ -67,16 +67,32 @@
     $('#boxCount').textContent = has ? ('已標記 ' + window.Redaction.boxCount() + ' 個遮蔽區塊') : '';
   }
 
-  /* ---- AI 設定 ---- */
+  /* ---- AI 設定（雙供應商） ---- */
+  function refreshProviderUI() {
+    const p = $('#providerSelect').value;
+    const sel = $('#modelSelect'); sel.innerHTML = '';
+    window.AI.models(p).forEach((m) => { const o = el('option'); o.value = m.v; o.textContent = m.t; sel.append(o); });
+    sel.value = window.AI.getModel(p);
+    $('#apiKeyInput').value = window.AI.getKey(p);
+    $('#keyLabel').textContent = (p === 'gemini' ? 'Gemini' : 'OpenAI') + ' API key';
+    $('#keyHelp').textContent = p === 'gemini'
+      ? '到 aistudio.google.com →「Get API key」免費申請。'
+      : '到 platform.openai.com → API keys 申請（需綁付款）。';
+    $('#provHint').textContent = p === 'gemini'
+      ? '⚠️ 免費版 Google 可能用你送出的資料改善產品（即使已去識別化）；有每日次數上限。'
+      : '不會拿 API 資料訓練；用多少付多少（每份病歷約幾美分）。';
+  }
   function openSettings() {
-    $('#apiKeyInput').value = window.AI.getKey();
-    $('#modelSelect').value = window.AI.getModel();
+    $('#providerSelect').value = window.AI.getProvider();
+    refreshProviderUI();
     $('#settingsModal').style.display = 'flex';
   }
   function closeSettings() { $('#settingsModal').style.display = 'none'; }
   function saveSettings() {
-    window.AI.setKey($('#apiKeyInput').value);
-    window.AI.setModel($('#modelSelect').value);
+    const p = $('#providerSelect').value;
+    window.AI.setProvider(p);
+    window.AI.setKey(p, $('#apiKeyInput').value);
+    window.AI.setModel(p, $('#modelSelect').value);
     closeSettings();
   }
 
@@ -234,6 +250,7 @@
     $('#openSettings').onclick = openSettings;
     $('#settingsClose').onclick = closeSettings;
     $('#settingsSave').onclick = saveSettings;
+    $('#providerSelect').onchange = refreshProviderUI;
     $('#settingsModal').addEventListener('click', (e) => { if (e.target.id === 'settingsModal') closeSettings(); });
     $('#aiFill').onclick = aiFill;
     if (!window.docx) $('#cdnWarn').style.display = 'block';
