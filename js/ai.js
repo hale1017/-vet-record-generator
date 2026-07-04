@@ -76,6 +76,24 @@ window.AI = (function () {
     return zh ? openaiTranslate(zh) : '';                             // 再翻成英文
   }
 
+  /* ---- 對外：整批翻成英文（打字輸入的中文用；一次呼叫翻多欄） ---- */
+  async function translateBatch(obj) {
+    const p = getProvider();
+    if (!getKey(p)) throw new Error('尚未設定 ' + p + ' API key');
+    const keys = Object.keys(obj).filter((k) => String(obj[k] == null ? '' : obj[k]).trim());
+    if (!keys.length) return {};
+    const payload = {}; keys.forEach((k) => { payload[k] = obj[k]; });
+    const prompt = '把下列 JSON 物件裡每個值翻成簡潔的英文臨床書寫。規則：\n' +
+      '1. 只有專有名詞（醫院名、寵物名、飼料/食品品牌）保留中文原文，其餘一律英文。\n' +
+      '2. 保留臨床縮寫；已是英文的保持原樣。\n' +
+      '3. 只輸出 JSON，鍵必須與輸入完全相同。\n\n' + JSON.stringify(payload);
+    const raw = p === 'gemini' ? await geminiJson(prompt) : await openaiJson(prompt);
+    let out = {};
+    try { out = JSON.parse(stripFence(raw)); } catch (e) { throw new Error('翻譯回傳非 JSON'); }
+    const res = {}; keys.forEach((k) => { if (out[k] != null) res[k] = String(out[k]); });
+    return res;
+  }
+
   /* ================= OpenAI ================= */
   async function openaiOcr(prompt, images) {
     const content = [{ type: 'text', text: prompt }].concat(images.map((u) => ({ type: 'image_url', image_url: { url: u } })));
@@ -91,6 +109,15 @@ window.AI = (function () {
     if (!res.ok) throw new Error(await errMsg(res, 'openai'));
     const d = await res.json();
     return d.choices[0].message.content;
+  }
+  async function openaiJson(prompt) {
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + getKey('openai') },
+      body: JSON.stringify({ model: getModel('openai'), temperature: 0, response_format: { type: 'json_object' }, messages: [{ role: 'user', content: prompt }] }),
+    });
+    if (!res.ok) throw new Error(await errMsg(res, 'openai'));
+    return (await res.json()).choices[0].message.content;
   }
   async function openaiTranslate(text) {
     const res = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -133,6 +160,15 @@ window.AI = (function () {
     const d = await res.json();
     return (((d.candidates || [])[0] || {}).content || {}).parts?.[0]?.text || '';
   }
+  async function geminiJson(prompt) {
+    const res = await fetch(gUrl(getModel('gemini')), {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0, response_mime_type: 'application/json' } }),
+    });
+    if (!res.ok) throw new Error(await errMsg(res, 'gemini'));
+    const d = await res.json();
+    return (((d.candidates || [])[0] || {}).content || {}).parts?.[0]?.text || '';
+  }
   async function geminiTranscribe(blob) {
     const b64 = await blobToB64(blob);
     const res = await fetch(gUrl(getModel('gemini')), {
@@ -166,5 +202,5 @@ window.AI = (function () {
     return m;
   }
 
-  return { getProvider, setProvider, getKey, setKey, hasKey, getModel, setModel, models, ocrRecord, transcribe };
+  return { getProvider, setProvider, getKey, setKey, hasKey, getModel, setModel, models, ocrRecord, transcribe, translateBatch };
 })();

@@ -220,6 +220,34 @@
     if (!root.children.length) root.append(el('div', 'muted', '（尚未填寫任何欄位）'));
   }
 
+  // 把所有欄位（含手打中文）翻成英文；保留 name/日期/數值/簽名不動
+  async function translateAll() {
+    if (!window.AI.hasKey()) { alert('請先在右上「⚙ 設定」填入 API key'); openSettings(); return; }
+    collect();
+    const skip = new Set(['name', 'date', 'caseNo', 'bw', 'bcs', 'bt', 'hr', 'bp', 'rr', 'intern', 'resident']);
+    const obj = {};
+    Object.keys(state.values).forEach((k) => {
+      if (skip.has(k) || k.indexOf('sig_') === 0) return;
+      const val = (state.values[k] || '').trim();
+      if (val) obj[k] = val;
+    });
+    if (!Object.keys(obj).length) { alert('沒有可翻譯的內容'); return; }
+    const btn = $('#translateBtn'), st = $('#translateStatus');
+    btn.disabled = true; st.textContent = '翻譯中…';
+    try {
+      const res = await window.AI.translateBatch(obj);
+      Object.keys(res).forEach((k) => {
+        state.values[k] = res[k];
+        const inp = document.querySelector('#formFields [data-key="' + k + '"]'); // 同步回表單，避免被 collect() 蓋回中文
+        if (inp) inp.value = res[k];
+      });
+      renderReview();
+      st.textContent = '✓ 已翻成英文';
+      setTimeout(() => { st.textContent = ''; }, 2500);
+    } catch (e) { st.textContent = ''; alert('翻譯失敗：' + e.message); }
+    finally { btn.disabled = false; }
+  }
+
   async function doExport() {
     collect();
     const btn = $('#exportBtn');
@@ -244,6 +272,7 @@
     $('#toStep4').onclick = () => { collect(); show(4); };
     $('#back3').onclick = () => show(3);
     $('#exportBtn').onclick = doExport;
+    $('#translateBtn').onclick = translateAll;
     $('#openSettings').onclick = openSettings;
     $('#settingsClose').onclick = closeSettings;
     $('#settingsSave').onclick = saveSettings;
