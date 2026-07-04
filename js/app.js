@@ -256,6 +256,7 @@
     btn.disabled = true; btn.textContent = '產生中…';
     try {
       await window.DocxGen.exportDocx(state.profileId, state.values);
+      if (window.gtag) window.gtag('event', 'export_docx', { profile: state.profileId }); // 匿名計數，無病歷內容
       btn.textContent = '✓ 已下載 .docx';
       setTimeout(() => { btn.textContent = '匯出 .docx'; btn.disabled = false; }, 2500);
     } catch (e) {
