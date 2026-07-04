@@ -12,5 +12,10 @@
 > 臨床格式（Profile A/B、縮寫表、去識別化清單）的權威來源在 VetVault：
 > `D:\obsidian\VetVault\20_VetSchool\clinical\workflows\WF-0002_medical-record-generator.md`
 
+## 著作權與授權
+
+© 2026 小屌鯨魚 — **保留所有權利（All Rights Reserved）**。
+本專案為專有軟體，**未經作者書面同意，禁止複製、修改、散布或將程式碼／設計另作他用**。詳見 [LICENSE](LICENSE)。歡迎在瀏覽器中正常使用本工具。
+
 ## 狀態
 方向定案（2026-07-03）。下一步：搭 MVP 第一版（選格式 → 上傳 → 去識別化 → 產 .docx 骨架，先不接 AI 跑通流程）。

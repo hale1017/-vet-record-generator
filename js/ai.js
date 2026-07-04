@@ -1,4 +1,6 @@
 /*
+ * © 2026 小屌鯨魚 — 保留所有權利 All Rights Reserved. 未經授權不得重用，見 LICENSE。
+ *
  * AI 層（BYO key）— 支援兩家供應商，使用者自選：
  *   - openai：GPT-4o vision + Whisper 轉錄（付費，不拿 API 資料訓練，無嚴格每日上限）
  *   - gemini：Gemini flash vision + 音訊轉錄（有免費額度；免費版資料可能被 Google 使用、有每日上限）

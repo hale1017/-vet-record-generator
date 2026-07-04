@@ -1,4 +1,6 @@
 /*
+ * © 2026 小屌鯨魚 — 保留所有權利 All Rights Reserved. 未經授權不得重用，見 LICENSE。
+ *
  * .docx 產生器 — 瀏覽器端 docx.js（全域 window.docx）。
  * A 預設外科：純段落（無表格）。B 劉乃潔老師：letterhead + 病歷表標題 + 單格大表格。
  * 值物件 values：section 存 values[key]；group 子欄位存 values["key.sub"]。

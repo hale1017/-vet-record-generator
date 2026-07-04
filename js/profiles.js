@@ -1,4 +1,6 @@
 /*
+ * © 2026 小屌鯨魚 — 保留所有權利 All Rights Reserved. 未經授權不得重用，見 LICENSE。
+ *
  * Profile 定義 — 資料驅動表單。
  * 臨床格式權威來源：使用者真實範本（PaPa=A 預設外科、Didi=B 劉乃潔老師）+ VetVault WF-0002。
  * block 型別：fields（一排小輸入）/ section（大 textarea）/ group（子欄位）/ signature。

@@ -1,4 +1,6 @@
 /*
+ * © 2026 小屌鯨魚 — 保留所有權利 All Rights Reserved. 未經授權不得重用，見 LICENSE。
+ *
  * Client 端去識別化 — 支援「多張」手寫病歷照片（一份病歷可能兩張）。
  * 每張照片一個 canvas，各自可拉黑框蓋掉飼主姓名/電話/病歷號/晶片號。
  * redacted 後的所有影像才會送雲端 AI（toDataURLs 回傳陣列）。
